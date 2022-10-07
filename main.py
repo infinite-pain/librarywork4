@@ -1,11 +1,9 @@
 from os import listdir
 from os.path import isfile
 
-notes = []    # a list collects dictionaries
-nbcount = 1    # count how many notebooks are there
+notes = {}   # dictionary contains lists that collect dictionaries
 myfiles = []    # show notebooks
-
-notebookFileName = 'notebook.csv'
+existing = []    # show is there a notebook in notes
 
 def byId(note):
     return note['id']
@@ -27,41 +25,44 @@ def byStatus(note):
 
 
 # read the notebook lines and put each one of them in the notes list
-def readbook():
-    print("List of available notebooks:\n")
-    print(myfiles)
-    print("Choose a notebook name you want to work with:\n")
-    notebookFileName = input()
-    with open("./notebooks/" + notebookFileName, "r") as f:
-        for line in f:
-            l = line.split(",")
-            note = {
-                "id": int(l[0]),
-                "task": l[1],
-                "time": l[2],
-                "date": l[3],
-                "priority": l[4],
-                "status": l[5][:-1]
-            }
-            notes.append(note)
+def pickbook():
+    print('List of available notebooks:', listdir('./notebooks/iamdir'))
+    global notebookFileName
+    notebookFileName = input('Choose a notebook name you want to work with:\n')
+    if notebookFileName not in existing:
+        with open("./notebooks/iamdir/" + notebookFileName, "r") as f:
+            notes[notebookFileName] = []
+            for line in f:
+                l = line.split(",")
+                note = {
+                    "id": int(l[0]),
+                    "task": l[1],
+                    "time": l[2],
+                    "date": l[3],
+                    "priority": l[4],
+                    "status": l[5][:-1]
+                }
+                notes[notebookFileName].append(note)
+    existing.append(notebookFileName)
+    chooseOperation()
 
 def sortbook():
     userAction = input('Choose the field to sort with: ')
     if userAction == 'exit':
         return ''
     elif userAction == 'id':
-        notes.sort(key=byId)
+        notes[notebookFileName].sort(key=byId)
     elif userAction == 'task':
-        notes.sort(key=byTask)
+        notes[notebookFileName].sort(key=byTask)
     elif userAction == 'time':
-        notes.sort(key=byTime)
+        notes[notebookFileName].sort(key=byTime)
     elif userAction == 'date':
-        notes.sort(key=byDate)
+        notes[notebookFileName].sort(key=byDate)
     elif userAction == 'priority':
-        notes.sort(key=byPriority)
+        notes[notebookFileName].sort(key=byPriority)
     elif userAction == 'status':
-        notes.sort(key=byStatus)
-    tableprint(notes)
+        notes[notebookFileName].sort(key=byStatus)
+    tableprint(notes[notebookFileName])
 
 # print the notebook using notes list
 def tableprint(notes):
@@ -91,7 +92,7 @@ def finish():
 # create a new notebook
 def makebook():
     l = []
-    l.append(notes[-1]['id'] + 1)
+    l.append(notes[notebookFileName][-1]['id'] + 1)
     l.append(input('Your task: '))
     l.append(input('Time: '))
     l.append(input('Date: '))
@@ -105,52 +106,40 @@ def makebook():
         'priority': l[4],
         'status': l[5][:-1]
     }
-    notes.append(note)
-    tableprint(notes)
+    notes[notebookFileName].append(note)
+    tableprint(notes[notebookFileName])
 
 # change existing values in certain lines
 def changebook():
     noteId = int(input('''Line's id: '''))
     noteField = input('Field (task, time, date, priority or status): ').lower()
     fieldValue = input('New value: ')
-    notes[noteId - 1][noteField] = fieldValue
-    tableprint(notes)
+    list = notes[notebookFileName]
+    list[noteId - 1][noteField] = fieldValue
+    tableprint(notes[notebookFileName])
 
 # delete certain line
 def delbook():
     noteId = int(input('''Line's id: '''))
-    del notes[noteId - 1]
-    for note in notes:
+    list = notes[notebookFileName]
+    del list[noteId - 1]
+    for note in list:
         if note['id'] > noteId:
             note['id'] -= 1
-    tableprint(notes)
-
-# choose a notebook to work with
-def pickbook():
-    while True:
-        print('Choose a notebook you want to work with: ', *notebooks)
-        a = input()
-        if a in notebooks:
-            print('Great!')
-            break
-        else:
-            print('There is not such a notebook as', a, 'Try again.')
-    readbook(a)
-    tableprint(notes)
-
+    tableprint(list)
 
 # ask what operation user want to perform and then redirect to the required function
 def chooseOperation():
     while True:
         a = input('Choose the operation:\n'
                   '1. Show existing lists\n'
-                  '2. Make a new notebook\n'
+                  '2. Make a new notebook line\n'
                   '3. Change the existing notebook\n'
                   '4. Delete the existing notebook\n'
                   '5. Pick the notebook\n'
                   '6. Sort\n')
         if a == '1':
-            tableprint(notes)
+            tableprint(notes[notebookFileName])
             break
         elif a == '2':
             makebook()
@@ -170,9 +159,4 @@ def chooseOperation():
         else:
             print('Incorrect answer. Try again.')
 
-print(listdir("./notebooks"))
-for filename in listdir("./notebooks"):
-    if isfile("./notebooks/"+filename):
-        myfiles.append(filename)
-
-chooseOperation()
+pickbook()
